@@ -20,8 +20,8 @@ type VPTreeDistancer interface {
 type VPTreeItem interface {
 	SetNode(*VPTreeNode)
 	GetNode() *VPTreeNode
-	ShouldSkip() bool
-	ApplyAffinity(float64) float64
+	ShouldSkip(VPTreeItem) bool
+	ApplyAffinity(float64, VPTreeItem) float64
 }
 
 type vpTreeComparator struct {
@@ -165,7 +165,7 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 
 	dist := v.Distancer.Distance((v.items)[node.index], target)
 
-	if node._dead || v.items[node.index].ShouldSkip() {
+	if node._dead || v.items[node.index].ShouldSkip(target) {
 		v.search(node.left, target, k, pq, tau)
 		v.search(node.right, target, k, pq, tau)
 		return
@@ -177,7 +177,7 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 		if pq.Len() == k {
 			heap.Pop(pq)
 		}
-		heap.Push(pq, &vpHeapItem{node.index, (v.items)[node.index].ApplyAffinity(dist), node, nil})
+		heap.Push(pq, &vpHeapItem{node.index, (v.items)[node.index].ApplyAffinity(dist, target), node, nil})
 		if pq.Len() == k {
 			*tau = (*pq)[0].Priority()
 		}

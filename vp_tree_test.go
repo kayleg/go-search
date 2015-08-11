@@ -10,6 +10,7 @@ type Point struct {
 	Lat, Lon float64
 	Date     int
 	_dist    float64
+	node     *VPTreeNode
 }
 
 func (p *Point) Dist() float64 {
@@ -18,6 +19,22 @@ func (p *Point) Dist() float64 {
 
 func (p *Point) SetDist(dist float64) {
 	p._dist = dist
+}
+
+func (p *Point) ApplyAffinity(dist float64, target VPTreeItem) float64 {
+	return dist
+}
+
+func (p *Point) ShouldSkip(target VPTreeItem) bool {
+	return false
+}
+
+func (p *Point) GetNode() *VPTreeNode {
+	return p.node
+}
+
+func (p *Point) SetNode(node *VPTreeNode) {
+	p.node = node
 }
 
 type PointDistancer struct {
@@ -40,7 +57,10 @@ func TestVPTreeAllPointsFindable(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
@@ -49,7 +69,10 @@ func TestVPTreeAllPointsFindable(t *testing.T) {
 
 	for i := 1; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			results, distances := tree.Search(&point, 1)
 			if len(results) != 1 {
 				t.Log("Results should have 1 item, not", len(results))
@@ -84,14 +107,20 @@ func TestVPTreeSimpleSearch(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{5, 5, 10, 0}
+	p := Point{
+		Lat:  5,
+		Lon:  5,
+		Date: 10}
 	results, distances := tree.Search(&p, 1)
 
 	if results == nil {
@@ -136,7 +165,10 @@ func TestVPTreeParallelSearch(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 100; i++ {
 		for j := 0; j < 100; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
@@ -146,7 +178,10 @@ func TestVPTreeParallelSearch(t *testing.T) {
 	for i := 1; i < 100; i++ {
 		for j := 0; j < 100; j++ {
 			go func(lat, lon float64, date int, dist float64) {
-				point := Point{lat, lon, date, 0}
+				point := Point{
+					Lat:  lat,
+					Lon:  lon,
+					Date: date}
 				results, distances := tree.Search(&point, 1)
 				if len(results) != 1 {
 					t.Log("Results should have 1 item, not", len(results))
@@ -182,14 +217,20 @@ func TestVPTreeInsert(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{5.5, 5.5, 10, 0}
+	p := Point{
+		Lat:  5.5,
+		Lon:  5.5,
+		Date: 10}
 	tree.Insert(&p)
 
 	results, distances := tree.Search(&p, 1)
@@ -234,14 +275,20 @@ func TestVPTreeRemove(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{5, 5, 10, 0}
+	p := Point{
+		Lat:  5,
+		Lon:  5,
+		Date: 10}
 	tree.Remove(&p)
 
 	results, distances := tree.Search(&p, 1)
@@ -283,20 +330,29 @@ func TestVPTreeAllPointsFindableAfterRemove(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 26.0; i < 27.0; i += 0.02 {
 		for j := -81.0; j < -80.0; j += 0.02 {
-			point := Point{float64(i), float64(j), int(i + j), 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: int(i + j)}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{26.4, -80.4, int(26.4 + -80.4), 0}
+	p := Point{
+		Lat:  26.4,
+		Lon:  -80.4,
+		Date: int(26.4 + -80.4)}
 	tree.Remove(&p)
 
 	for i := 26.0; i < 27; i += 0.02 {
 		for j := -81.0; j < -80.0; j += 0.02 {
 			if math.Abs(i-26.4) > 0.0001 && math.Abs(j-(-80.4)) > 0.0001 {
-				point := Point{float64(i), float64(j), int(i + j), 0}
+				point := Point{
+					Lat:  float64(i),
+					Lon:  float64(j),
+					Date: int(i + j)}
 				results, distances := tree.Search(&point, 1)
 				if len(results) != 1 {
 					t.Log("Results should have 1 item, not", len(results))
@@ -332,14 +388,20 @@ func TestVPTreeRebuild(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{5.5, 5.5, 10, 0}
+	p := Point{
+		Lat:  5.5,
+		Lon:  5.5,
+		Date: 10}
 	tree.Insert(&p)
 
 	tree.Rebuild()
@@ -385,14 +447,20 @@ func TestRebuildAfterRemove(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{5, 5, 10, 0}
+	p := Point{
+		Lat:  5,
+		Lon:  5,
+		Date: 10}
 	tree.Remove(&p)
 	tree.Rebuild()
 
@@ -416,7 +484,10 @@ func TestRebuildAfterRemove(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
 			if i != 5 && j != 5 {
-				point := Point{float64(i), float64(j), i + j, 0}
+				point := Point{
+					Lat:  float64(i),
+					Lon:  float64(j),
+					Date: i + j}
 				results, _ := tree.Search(&point, 1)
 				if len(results) != 1 {
 					t.Log("Results should have 1 item, not", len(results))
@@ -443,16 +514,25 @@ func TestVPTreeInsertAfterRemove(t *testing.T) {
 	points := make([]VPTreeItem, 0)
 	for i := 26.0; i < 27.0; i += 0.02 {
 		for j := -81.0; j < -80.0; j += 0.02 {
-			point := Point{float64(i), float64(j), int(i + j), 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: int(i + j)}
 			points = append(points, &point)
 		}
 	}
 
 	tree.SetItems(points)
 
-	p := Point{26.4, -80.4, int(26.4 + -80.4), 0}
+	p := Point{
+		Lat:  26.4,
+		Lon:  -80.4,
+		Date: int(26.4 + -80.4)}
 	tree.Remove(&p)
-	p = Point{26.401, -80.401, -54, 0}
+	p = Point{
+		Lat:  26.401,
+		Lon:  -80.401,
+		Date: -54}
 	tree.Insert(&p)
 
 	results, distances := tree.Search(&p, 1)
@@ -485,7 +565,10 @@ func BenchmarkTreeBuild(b *testing.B) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 1000; i++ {
 		for j := 0; j < 1000; j++ {
-			point := Point{float64(i), float64(j), 0, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: 0}
 			points = append(points, &point)
 		}
 	}
@@ -507,7 +590,10 @@ func BenchmarkTreeSearch(b *testing.B) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 100; i++ {
 		for j := 0; j < 100; j++ {
-			point := Point{float64(i), float64(j), i + j, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: i + j}
 			points = append(points, &point)
 		}
 	}
@@ -522,7 +608,10 @@ func BenchmarkTreeSearch(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		p := Point{rand.Float64() * 100.0, rand.Float64() * 100.0, i, 0}
+		p := Point{
+			Lat:  rand.Float64() * 100.0,
+			Lon:  rand.Float64() * 100.0,
+			Date: i}
 		tree.Search(&p, 1)
 	}
 }
@@ -531,7 +620,10 @@ func BenchmarkTreeInsert(b *testing.B) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 100; i++ {
 		for j := 0; j < 100; j++ {
-			point := Point{float64(i), float64(j), 0, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: 0}
 			points = append(points, &point)
 		}
 	}
@@ -544,7 +636,10 @@ func BenchmarkTreeInsert(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		p := Point{rand.Float64() * 100.0, rand.Float64() * 100.0, i, 0}
+		p := Point{
+			Lat:  rand.Float64() * 100.0,
+			Lon:  rand.Float64() * 100.0,
+			Date: i}
 		tree.Insert(&p)
 	}
 }
@@ -553,7 +648,10 @@ func BenchmarkTreeSearchAfterInsert(b *testing.B) {
 	points := make([]VPTreeItem, 0)
 	for i := 0; i < 100; i++ {
 		for j := 0; j < 100; j++ {
-			point := Point{float64(i), float64(j), 0, 0}
+			point := Point{
+				Lat:  float64(i),
+				Lon:  float64(j),
+				Date: 0}
 			points = append(points, &point)
 		}
 	}
@@ -564,14 +662,20 @@ func BenchmarkTreeSearchAfterInsert(b *testing.B) {
 	tree.SetItems(points)
 
 	for i := 0; i < 10000; i++ {
-		p := Point{rand.Float64() * 100.0, rand.Float64() * 100.0, i, 0}
+		p := Point{
+			Lat:  rand.Float64() * 100.0,
+			Lon:  rand.Float64() * 100.0,
+			Date: i}
 		tree.Insert(&p)
 	}
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		p := Point{rand.Float64() * 100.0, rand.Float64() * 100.0, i, 0}
+		p := Point{
+			Lat:  rand.Float64() * 100.0,
+			Lon:  rand.Float64() * 100.0,
+			Date: i}
 		tree.Search(&p, 1)
 	}
 
