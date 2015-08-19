@@ -383,6 +383,9 @@ func (v *VPTree) Insert(item VPTreeItem) {
 // Remove marks that an item should no longer be included in search results. The
 // item will be removed from the index when the index rebuilds
 func (v *VPTree) Remove(item VPTreeItem) {
+	if v.root == nil {
+		return
+	}
 
 	if node := item.GetNode(); node != nil {
 		node._dead = true
