@@ -433,3 +433,7 @@ func (v *VPTree) Rebuild() {
 	}
 	v.SetItems(v.items)
 }
+
+func (v *VPTree) Items() []VPTreeItem {
+	return v.items
+}
