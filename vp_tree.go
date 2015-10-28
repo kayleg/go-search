@@ -353,6 +353,7 @@ func (v *VPTree) Insert(item VPTreeItem) {
 	items := append(v.items, item)
 	v.items = items
 	node.isLeaf = false
+	item.SetNode(&node)
 
 	for {
 		dist := v.Distancer.Distance(v.items[match.index], item)
