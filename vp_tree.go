@@ -440,7 +440,7 @@ func (v *VPTree) Rebuild() {
 		didx := v._deadIdx[i]
 		l = append(l[0:didx], l[didx+1:]...)
 	}
-	v.SetItems(v.items)
+	v.SetItems(l)
 }
 
 func (v *VPTree) Items() []VPTreeItem {
