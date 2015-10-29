@@ -102,7 +102,7 @@ func (v *VPTree) Search(target VPTreeItem, k int) ([]VPTreeItem, []float64) {
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
 
-	pq = sort.Reverse(pq).(*PriorityQueue)
+	sort.Sort(sort.Reverse(pq))
 	for i, length := 0, pq.Len(); i < length; i++ {
 		item := pq.Pop().(*vpHeapItem)
 		results[i] = v.items[item.index]
@@ -127,7 +127,7 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 	var results []VPTreeItem
 	var distances []float64
 
-	pq = sort.Reverse(pq).(*PriorityQueue)
+	sort.Sort(sort.Reverse(pq))
 	for i, length := 0, pq.Len(); i < length; i++ {
 		item := pq.Pop().(*vpHeapItem)
 		results[i] = v.items[item.index]
