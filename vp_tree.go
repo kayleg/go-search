@@ -124,8 +124,8 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 
 	v.search(v.root, target, k, pq, tau, true)
 
-	var results []VPTreeItem
-	var distances []float64
+	results := make([]VPTreeItem, pq.Len())
+	distances := make([]float64, pq.Len())
 
 	sort.Sort(sort.Reverse(pq))
 	for i, length := 0, pq.Len(); i < length; i++ {
