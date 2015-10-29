@@ -97,20 +97,16 @@ func (v *VPTree) Search(target VPTreeItem, k int) ([]VPTreeItem, []float64) {
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, target, k, pq, tau)
+	v.search(v.root, target, k, pq, tau, true)
 
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
 
-	// sort.Reverse(pq)
-	idx := len(results) - 1
-	for pq.Len() > 0 {
+	pq = sort.Reverse(pq).(*PriorityQueue)
+	for i, length := 0, pq.Len(); i < length; i++ {
 		item := pq.Pop().(*vpHeapItem)
-		results[idx] = v.items[item.index]
-		distances[idx] = item.Priority()
-		idx--
-		// results = append(results, v.items[item.index])
-		// distances = append(distances, item.Priority())
+		results[i] = v.items[item.index]
+		distances[i] = item.Priority()
 	}
 
 	return results, distances
@@ -126,23 +122,23 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, target, k, pq, tau)
+	v.search(v.root, target, k, pq, tau, true)
 
 	var results []VPTreeItem
 	var distances []float64
 
-	sort.Reverse(pq)
-	for pq.Len() > 0 {
+	pq = sort.Reverse(pq).(*PriorityQueue)
+	for i, length := 0, pq.Len(); i < length; i++ {
 		item := pq.Pop().(*vpHeapItem)
-		results = append(results, v.items[item.index])
-		distances = append(distances, item.Priority())
+		results[i] = v.items[item.index]
+		distances[i] = item.Priority()
 	}
 
 	return results, distances
 
 }
 
-func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *PriorityQueue, tau *float64) {
+func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *PriorityQueue, tau *float64, applyAffinity bool) {
 	if node == nil {
 		return
 	}
@@ -163,21 +159,33 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 	// 	return
 	// }
 
-	dist := v.Distancer.Distance((v.items)[node.index], target)
-
 	if node._dead || v.items[node.index].ShouldSkip(target) {
-		v.search(node.left, target, k, pq, tau)
-		v.search(node.right, target, k, pq, tau)
+		v.search(node.left, target, k, pq, tau, applyAffinity)
+		v.search(node.right, target, k, pq, tau, applyAffinity)
 		return
 	}
-	// This Vantage-point is close enough
 
+	dist := v.Distancer.Distance((v.items)[node.index], target)
 	t := *tau
+
+	// This Vantage-point is close enough
 	if dist < t {
 		if pq.Len() == k {
 			heap.Pop(pq)
 		}
-		heap.Push(pq, &vpHeapItem{node.index, (v.items)[node.index].ApplyAffinity(dist, target), node, nil})
+		var priority float64
+		if applyAffinity {
+			priority = (v.items)[node.index].ApplyAffinity(dist, target)
+		} else {
+			priority = dist
+		}
+
+		heap.Push(pq, &vpHeapItem{
+			index:  node.index,
+			dist:   priority,
+			node:   node,
+			parent: nil})
+
 		if pq.Len() == k {
 			*tau = (*pq)[0].Priority()
 		}
@@ -189,17 +197,17 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 
 	if dist < node.threshold {
 		if node.left != nil && node.m-t <= dist {
-			v.search(node.left, target, k, pq, tau)
+			v.search(node.left, target, k, pq, tau, applyAffinity)
 		}
 		if node.right != nil && node.threshold-t < dist && dist < node.M+t {
-			v.search(node.right, target, k, pq, tau)
+			v.search(node.right, target, k, pq, tau, applyAffinity)
 		}
 	} else {
 		if node.right != nil && node.m-t < dist {
-			v.search(node.right, target, k, pq, tau)
+			v.search(node.right, target, k, pq, tau, applyAffinity)
 		}
 		if node.left != nil && node.m-t < dist && dist < node.threshold+t {
-			v.search(node.left, target, k, pq, tau)
+			v.search(node.left, target, k, pq, tau, applyAffinity)
 		}
 	}
 }
@@ -336,7 +344,7 @@ func (v *VPTree) Insert(item VPTreeItem) {
 
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
-	v.search(v.root, item, 1, pq, tau)
+	v.search(v.root, item, 1, pq, tau, false)
 
 	heapItem := (*pq)[0].(*vpHeapItem)
 
@@ -401,7 +409,7 @@ func (v *VPTree) Remove(item VPTreeItem) {
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, item, 1, pq, tau)
+	v.search(v.root, item, 1, pq, tau, false)
 
 	if pq.Len() >= 1 {
 		heapItem := (*pq)[0].(*vpHeapItem)
