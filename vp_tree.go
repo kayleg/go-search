@@ -2,7 +2,6 @@ package search
 
 import (
 	"container/heap"
-	"log"
 	"math"
 	"math/rand"
 	"sort"
@@ -103,9 +102,8 @@ func (v *VPTree) Search(target VPTreeItem, k int) ([]VPTreeItem, []float64) {
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
 
-	sort.Sort(sort.Reverse(pq))
-	for i, length := 0, pq.Len(); i < length; i++ {
-		item := pq.Pop().(*vpHeapItem)
+	for i := pq.Len() - 1; i >= 0; i-- {
+		item := heap.Pop(pq).(*vpHeapItem)
 		results[i] = v.items[item.index]
 		distances[i] = item.Priority()
 	}
@@ -128,9 +126,8 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
 
-	sort.Sort(sort.Reverse(pq))
-	for i, length := 0, pq.Len(); i < length; i++ {
-		item := pq.Pop().(*vpHeapItem)
+	for i := pq.Len() - 1; i >= 0; i-- {
+		item := heap.Pop(pq).(*vpHeapItem)
 		results[i] = v.items[item.index]
 		distances[i] = item.Priority()
 	}
@@ -187,15 +184,10 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 			node:   node,
 			parent: nil})
 
-		log.Println("Queue --------")
-		for _, v := range *pq {
-			log.Println(v.Priority())
-		}
-		log.Println("++++++++++++ QUEUE")
-
 		if pq.Len() == k {
-			*tau = (*pq)[0].Priority()
-			log.Println("Tau", *tau)
+			item := heap.Pop(pq).(*vpHeapItem)
+			*tau = item.Priority()
+			heap.Push(pq, item)
 		}
 	}
 
