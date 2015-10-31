@@ -2,6 +2,7 @@ package search
 
 import (
 	"container/heap"
+	"log"
 	"math"
 	"math/rand"
 	"sort"
@@ -186,8 +187,15 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 			node:   node,
 			parent: nil})
 
+		log.Println("Queue --------")
+		for _, v := range *pq {
+			log.Println(v.Priority())
+		}
+		log.Println("++++++++++++ QUEUE")
+
 		if pq.Len() == k {
 			*tau = (*pq)[0].Priority()
+			log.Println("Tau", *tau)
 		}
 	}
 
