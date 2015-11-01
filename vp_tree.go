@@ -164,18 +164,18 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 	}
 
 	dist := v.Distancer.Distance((v.items)[node.index], target)
+	var priority float64
+	if applyAffinity {
+		priority = (v.items)[node.index].ApplyAffinity(dist, target)
+	} else {
+		priority = dist
+	}
 	t := *tau
 
 	// This Vantage-point is close enough
-	if dist < t {
+	if priority < t {
 		if pq.Len() == k {
 			heap.Pop(pq)
-		}
-		var priority float64
-		if applyAffinity {
-			priority = (v.items)[node.index].ApplyAffinity(dist, target)
-		} else {
-			priority = dist
 		}
 
 		heap.Push(pq, &vpHeapItem{
