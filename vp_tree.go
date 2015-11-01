@@ -97,7 +97,7 @@ func (v *VPTree) Search(target VPTreeItem, k int) ([]VPTreeItem, []float64) {
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, target, k, pq, tau, true)
+	v.search(v.root, target, k, pq, tau, math.MaxFloat64, true)
 
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
@@ -121,7 +121,7 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, target, k, pq, tau, true)
+	v.search(v.root, target, k, pq, tau, maxDist, true)
 
 	results := make([]VPTreeItem, pq.Len())
 	distances := make([]float64, pq.Len())
@@ -136,7 +136,7 @@ func (v *VPTree) SearchInRange(target VPTreeItem, k int, maxDist float64) ([]VPT
 
 }
 
-func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *PriorityQueue, tau *float64, applyAffinity bool) {
+func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *PriorityQueue, tau *float64, maxDist float64, applyAffinity bool) {
 	if node == nil {
 		return
 	}
@@ -158,14 +158,14 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 	// }
 
 	if node._dead || v.items[node.index].ShouldSkip(target) {
-		v.search(node.left, target, k, pq, tau, applyAffinity)
-		v.search(node.right, target, k, pq, tau, applyAffinity)
+		v.search(node.left, target, k, pq, tau, maxDist, applyAffinity)
+		v.search(node.right, target, k, pq, tau, maxDist, applyAffinity)
 		return
 	}
 
 	dist := v.Distancer.Distance((v.items)[node.index], target)
 	var priority float64
-	if applyAffinity {
+	if applyAffinity && dist < maxDist {
 		priority = (v.items)[node.index].ApplyAffinity(dist, target)
 	} else {
 		priority = dist
@@ -197,17 +197,17 @@ func (v *VPTree) search(node *VPTreeNode, target VPTreeItem, k int, pq *Priority
 
 	if dist < node.threshold {
 		if node.left != nil && node.m-t <= dist {
-			v.search(node.left, target, k, pq, tau, applyAffinity)
+			v.search(node.left, target, k, pq, tau, maxDist, applyAffinity)
 		}
 		if node.right != nil && node.threshold-t < dist && dist < node.M+t {
-			v.search(node.right, target, k, pq, tau, applyAffinity)
+			v.search(node.right, target, k, pq, tau, maxDist, applyAffinity)
 		}
 	} else {
 		if node.right != nil && node.m-t < dist {
-			v.search(node.right, target, k, pq, tau, applyAffinity)
+			v.search(node.right, target, k, pq, tau, maxDist, applyAffinity)
 		}
 		if node.left != nil && node.m-t < dist && dist < node.threshold+t {
-			v.search(node.left, target, k, pq, tau, applyAffinity)
+			v.search(node.left, target, k, pq, tau, maxDist, applyAffinity)
 		}
 	}
 }
@@ -344,7 +344,7 @@ func (v *VPTree) Insert(item VPTreeItem) {
 
 	v.mutex.Lock()
 	defer v.mutex.Unlock()
-	v.search(v.root, item, 1, pq, tau, false)
+	v.search(v.root, item, 1, pq, tau, math.MaxFloat64, false)
 
 	heapItem := (*pq)[0].(*vpHeapItem)
 
@@ -409,7 +409,7 @@ func (v *VPTree) Remove(item VPTreeItem) {
 	pq := &PriorityQueue{}
 	heap.Init(pq)
 
-	v.search(v.root, item, 1, pq, tau, false)
+	v.search(v.root, item, 1, pq, tau, math.MaxFloat64, false)
 
 	if pq.Len() >= 1 {
 		heapItem := (*pq)[0].(*vpHeapItem)
