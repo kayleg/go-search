@@ -43,7 +43,8 @@ type PointDistancer struct {
 func (p *PointDistancer) Distance(a, b VPTreeItem) float64 {
 	p1, p2 := a.(*Point), b.(*Point)
 	// dd := float64(p1.Date - p2.Date)
-	return VincentyDistance(p1.Lat, p1.Lon, p2.Lat, p2.Lon)
+	return HaversineEarth(p1.Lat, p1.Lon, p2.Lat, p2.Lon)
+	//return VincentyDistance(p1.Lat, p1.Lon, p2.Lat, p2.Lon)
 }
 
 func TestVPTreeAllPointsFindable(t *testing.T) {

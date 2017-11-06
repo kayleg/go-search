@@ -4,6 +4,7 @@ import (
 	"container/heap"
 	"math"
 	"math/rand"
+	"runtime"
 	"sort"
 	"sync"
 )
@@ -289,32 +290,33 @@ func (v *VPTree) buildFromPoints(nodes []*VPTreeNode) *VPTreeNode {
 	vp := v.items[node.index]
 
 	// Ensure Distance calculations are only done once per sort
-	dmin := math.Inf(1)
-	dmax := 0.0
 	S := v.items
-	var mutex sync.Mutex
 	var wg sync.WaitGroup
-	for i := 0; i < listLength; i++ {
-		wg.Add(1)
-		go func(item *VPTreeNode) {
-			dist := v.Distancer.Distance(vp, S[item.index])
-			item.dist = dist
-			mutex.Lock()
-			if dmin > dist {
-				dmin = dist
+	distances := make([]float64, listLength)
+	batchSize := int(math.Ceil(float64(listLength) / float64(runtime.NumCPU())))
+	for i := 0; i < listLength; i += batchSize {
+		wg.Add(batchSize)
+		go func(idx int) {
+			var batch []*VPTreeNode
+			if idx+batchSize < listLength {
+				batch = nodes[idx:(idx + batchSize)]
+			} else {
+				batch = nodes[idx:listLength]
 			}
-			if dmax < dist {
-				dmax = dist
+			for j, item := range batch {
+				dist := v.Distancer.Distance(vp, S[item.index])
+				item.dist = dist
+				distances[j] = dist
 			}
-			mutex.Unlock()
-			wg.Done()
-		}(nodes[i])
+			wg.Add(-batchSize)
+		}(i)
 	}
 
 	wg.Wait()
+	sort.Float64s(distances)
 
-	node.m = dmin
-	node.M = dmax
+	node.m = distances[0]
+	node.M = distances[listLength-1]
 
 	medianIndex := listLength >> 1
 	median := v.nthElement(nodes, 0, medianIndex+1, listLength-1)
