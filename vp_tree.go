@@ -42,6 +42,11 @@ type VPTreeNode struct {
 	_dead                 bool
 }
 
+// IsDead returns if the node has been marked for deletion
+func (v *VPTreeNode) IsDead() bool {
+	return v._dead
+}
+
 type vpHeapItem struct {
 	index        int
 	dist         float64
